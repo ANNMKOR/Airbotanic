@@ -1549,7 +1549,7 @@ function introSpeak(open){
 function shelfPeek(then){
   const sayEl = document.querySelector('.scene .say');
   let finished = false;
-  const done = function(){ if (finished) return; finished = true; setTimeout(function(){ const s = document.querySelector('.scene .say'); if (s && !openSheet) s.textContent = keeperLine(gate()); }, 2500); if (then) then(); };
+  const done = function(){ if (finished) return; finished = true; setTimeout(function(){ if (openSheet) return; const s = document.querySelector('.scene .say'); if (s) s.textContent = keeperLine(gate()); setStageMood(sceneMood()); }, 2500); if (then) then(); };
   if (S.shelfPeek || matchMedia('(prefers-reduced-motion: reduce)').matches){ return done(); }
   S.shelfPeek = true; save();
   const max = document.documentElement.scrollHeight - window.innerHeight;
