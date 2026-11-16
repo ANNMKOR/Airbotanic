@@ -1832,7 +1832,7 @@ function checkIntegrity(force){
 /* ---------- Incident reports ---------- */
 // cheating attempts are reported to Anna-Maria through ntfy; queued while offline
 function report(kind, text){
-  if (DEMO || !DATA.ntfy) return;
+  if (DEMO || !DATA.ntfy || !S.letter) return;   // only a phone where the letter was opened (someone who knows the answer) reports
   const now = Date.now(); S.reported = S.reported || {};
   if (S.reported[kind] && now - S.reported[kind] < 30*60*1000) return;   // one report per kind per half hour
   S.reported[kind] = now;
