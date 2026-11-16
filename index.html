@@ -16,6 +16,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
 <style>
@@ -677,6 +678,26 @@ body.arriving .scene .say{opacity:0!important;transition:none}
 .legend .lg{display:inline-flex;gap:2px;margin-left:4px}
 .legend .mg{width:20px;height:23px}
 
+/* v20: install screen, shown in a browser tab instead of the bar */
+.gate{position:fixed;inset:0;z-index:400;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(env(safe-area-inset-top,0px) + 36px) max(20px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 32px) max(20px,env(safe-area-inset-left,0px));
+  background:radial-gradient(90% 50% at 50% 18%,rgba(122,21,52,.32),transparent 70%),radial-gradient(140% 90% at 50% 30%,#0b1024 0%,#05070f 62%,#020308 100%)}
+.gate .in{max-width:420px;margin:0 auto;display:grid;justify-items:center;text-align:center}
+.gate .sp-emb{width:88px;height:88px}
+.gate .sp-emb .dr{stroke-dashoffset:0;stroke-dasharray:none}
+.gate .word{margin-top:12px;font-family:var(--font-display);font-size:34px;line-height:1.1;background:var(--gold-metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gate .route{margin-top:6px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.gate h1{margin:30px 0 0;font-family:var(--font-display);font-weight:400;font-size:27px;line-height:1.15;color:#fff1cf;text-wrap:balance}
+.gate .lead{margin:12px 0 0;font-size:15px;line-height:1.5;color:var(--ink);max-width:34ch}
+.gate ol{list-style:none;margin:26px 0 0;padding:0;width:100%;display:grid;gap:10px;counter-reset:st;text-align:left}
+.gate li{counter-increment:st;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;padding:13px 14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(240,196,92,.16);font-size:15px;line-height:1.4;color:var(--ink)}
+.gate li::before{content:counter(st);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;font-family:var(--font-mono);font-size:15px;color:#2a1a05;background:var(--gold-metal);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.gate li b{color:#fff1cf;font-weight:600}
+.gate .ic{display:inline-grid;place-items:center;vertical-align:-5px;width:24px;height:24px;margin:0 2px;border-radius:7px;background:rgba(255,255,255,.1)}
+.gate .ic svg{width:15px;height:15px;stroke:#fff1cf;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gate .note{margin-top:20px;font-size:13px;line-height:1.5;color:var(--muted);max-width:36ch}
+.gate .link{margin-top:20px;padding:12px 16px;border-radius:14px;font-family:var(--font-mono);font-size:14px;color:var(--gold-hi);background:rgba(255,255,255,.05);border:1px solid rgba(240,196,92,.2);word-break:break-all;-webkit-user-select:all;user-select:all}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -735,6 +756,10 @@ const STORE_KEY = 'ginAdvent2026.v1';
 const HASH = (location.hash||'').replace('#','');
 const ON_PAGES = /\.github\.io$/i.test(location.hostname);
 const ALLOW_DEMO = false;
+const STANDALONE = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const INSTALL_GATE = ON_PAGES && !STANDALONE;     // in a browser tab the bar does not open: it asks to be put on the home screen first
 const DEMO = ALLOW_DEMO && (HASH === 'demo' || (!ON_PAGES && HASH !== 'live'));
 
 /* ---------- Storage ---------- */
@@ -817,6 +842,7 @@ function hms(ms){ ms = Math.max(0,ms); const t = Math.floor(ms/1000); return pad
 function dhms(ms){ ms = Math.max(0,ms); const t = Math.floor(ms/1000); const d = Math.floor(t/86400); return (d>0? d+' д  ' : '') + pad(Math.floor(t/3600)%24)+':'+pad(Math.floor(t/60)%60)+':'+pad(t%60); }
 
 async function syncTime(){
+  if (INSTALL_GATE) return;
   if (DEMO) return;
   if (navigator.onLine === false){ setNet('offline'); return; }
   const url = location.pathname + '?__time=' + Date.now();
@@ -2038,6 +2064,42 @@ function afterSplash(){
   checkAlarms(); maybeDailyFact(); maybeFarewell();
 }
 
+
+/* ---------- Install screen ---------- */
+function showInstall(kind){
+  kind = kind || (IS_IOS ? 'ios' : IS_ANDROID ? 'android' : 'desktop');
+  const ic = function(p){ return '<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg></span>'; };
+  const SHARE = ic('<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8"/>');
+  const MENU = ic('<path d="M5 7h14M5 12h14M5 17h14"/>');
+  const DOTS = ic('<circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/>');
+  const PLUS = ic('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>');
+  let body;
+  if (kind==='ios'){
+    body = '<h1>Посадка только через терминал</h1>'+
+      '<p class="lead">Этот бар работает как приложение. Поставь его на экран «Домой» и открывай с иконки: там тебя уже ждёт письмо.</p>'+
+      '<ol><li><span>Нажми '+MENU+' или '+DOTS+' рядом с адресом внизу и выбери <b>«Поделиться»</b> '+SHARE+'</span></li>'+
+      '<li><span>Пролистай список и нажми <b>«На экран „Домой“»</b> '+PLUS+'</span></li>'+
+      '<li><span>Нажми <b>«Добавить»</b> и открой бар с новой иконки</span></li></ol>'+
+      '<p class="note">Если «Поделиться» видна сразу внизу экрана, просто нажми её. А эту вкладку потом можно закрыть.</p>';
+  } else if (kind==='android'){
+    body = '<h1>Посадка только через терминал</h1>'+
+      '<p class="lead">Этот бар работает как приложение. Поставь его на главный экран и открывай с иконки: там тебя уже ждёт письмо.</p>'+
+      '<ol><li><span>Открой меню браузера '+ic('<circle cx="12" cy="6" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="18" r="1.2"/>')+'</span></li>'+
+      '<li><span>Выбери <b>«Добавить на главный экран»</b> или <b>«Установить приложение»</b></span></li>'+
+      '<li><span>Открой бар с новой иконки</span></li></ol>';
+  } else {
+    body = '<h1>Этот бар работает на телефоне</h1>'+
+      '<p class="lead">Открой эту ссылку на своём iPhone в Safari и поставь бар на экран «Домой». Всё самое интересное там.</p>'+
+      '<div class="link">'+esc(location.origin + location.pathname)+'</div>';
+  }
+  const el = document.createElement('div');
+  el.className = 'gate'; el.id = 'gate'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+  el.innerHTML = '<div class="in">'+EMBLEM+'<div class="word">airBotanic</div><div class="route">Рейс BT 2026 · Таллин → Рождество</div>'+body+'</div>';
+  if (DEMO) el.addEventListener('click', function(){ el.remove(); });
+  document.body.appendChild(el);
+  const sp = document.getElementById('splash'); if (sp && INSTALL_GATE) sp.remove();
+}
+
 /* ---------- Demo panel ---------- */
 function renderDemo(){
   const box = document.getElementById('demoBox');
@@ -2046,12 +2108,15 @@ function renderDemo(){
   box.innerHTML = '<div class="demo"><div><b>Тестовый режим.</b> Время ненастоящее, отметки не сохраняются. Сейчас: <span class="mono">'+esc(ruShort.format(new Date(ms)))+'</span></div>'+
     '<div class="row"><button data-demo="nov">29 ноя</button><button data-demo="pre">30 ноя 23:59:50</button><button data-demo="dec1">1 дек 10:00</button><button data-demo="day">+1 день</button><button data-demo="hour">+6 часов</button></div>'+
     '<div class="row"><button data-demo="offline" aria-pressed="'+demo.offline+'">Без интернета</button><button data-demo="clock" aria-pressed="'+demo.clock+'">Часы переведены</button><button data-demo="hack">Взлом памяти</button><button data-demo="almost">Почти финал</button><button data-demo="end">Финал</button><button data-demo="reset">Сбросить всё</button></div>'+
-    '<div class="row"><button data-demo="splashLong">Заставка: первый запуск</button><button data-demo="splashShort">Заставка: обычная</button></div></div>';
+    '<div class="row"><button data-demo="splashLong">Заставка: первый запуск</button><button data-demo="splashShort">Заставка: обычная</button></div>'+
+    '<div class="row"><button data-demo="instIos">Установка: iPhone</button><button data-demo="instDesk">Установка: компьютер</button></div></div>';
 }
 function demoAct(a){
   const setT = function(ms){ demo.base = ms; demo.perf = perfNow(); };
   if (a==='splashLong') return startSplash('long');
   if (a==='splashShort') return startSplash('short');
+  if (a==='instIos') return showInstall('ios');
+  if (a==='instDesk') return showInstall('desktop');
   if (a==='nov') setT(Date.UTC(2026,10,29,17,30));
   if (a==='hack'){
     // pretend he edited storage: every bottle marked open right now
@@ -2160,10 +2225,13 @@ setInterval(function(){ if (document.visibilityState==='visible') syncTime(); },
 
 document.querySelector('.tab[data-tab="bar"]').setAttribute('aria-current','page');
 if (DEMO) net.status = 'online';
-loadAvatars();
-render();
-startSplash();
-syncTime();
+if (INSTALL_GATE){ showInstall(); }
+else {
+  loadAvatars();
+  render();
+  startSplash();
+  syncTime();
+}
 if (DEMO && PREVIEW_PASS){ decrypt(PREVIEW_PASS).then(function(d){ storeAvatars(d.avatars); if (d.name) S.barName = d.name; render(); }).catch(function(){}); }
 if (!DEMO && ON_PAGES && 'serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(function(){}); }catch(e){} }
 })();
