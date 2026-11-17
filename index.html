@@ -1233,13 +1233,11 @@ function tapBartender(){
   if (g.reason==='tamper' || g.reason==='skew') return msgSheet(g.reason);
   const d = factDay();
   if (d && (S.storyHeard||0) < d) return teaser(d);
-  if (d || tapBartender.told) return quip();
-  tapBartender.told = true;
-  speak({stamp:'Скоро', title:'Каждый день по истории', text:'С 1 декабря я буду рассказывать тебе истории из мира джина: легенды, скандалы и знаменитых любителей. Двадцать пять дней, двадцать пять историй.', button:'Жду', btnClass:'quiet', mood:'smile'});
+  return quip();   // stories are never announced: they simply start turning up from 1 December
 }
 // poking the bartender: she answers with a short remark in her bubble
 const QUIPS = DATA.quips;
-let quipN = 0, quipTimer = null;
+let quipN = Math.floor(Math.random() * QUIPS.length), quipTimer = null;   // a different first remark each launch
 function quip(){ const q = QUIPS[quipN++ % QUIPS.length]; sayNow(q[0], q[1], 3800); }
 // a short line in her bubble with a matching face, then back to the usual phrase
 function sayNow(text, mood, ms){
